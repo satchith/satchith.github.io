@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>PS Satchith — Molecular Dynamics</title>
+<meta name="description" content="PS Satchith — Integrated MSc Physics student working on ab initio molecular dynamics and machine-learning interatomic potentials for electrolyte and energy-materials systems." />
+
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+
+<style>
+  :root{
+    --bg:#0A0C12;
+    --bg-2:#11141D;
+    --panel:rgba(255,255,255,0.025);
+    --ink:#EAECF3;
+    --muted:#878FA3;
+    --line:#1E2330;
+    --line-2:#262C3B;
+    --accent:#5C8DFF;
+    --accent-soft:rgba(92,141,255,0.12);
+    --glow:rgba(92,141,255,0.35);
+    --maxw:1080px;
+    --display:"Space Grotesk",sans-serif;
+    --body:"Inter",sans-serif;
+    --mono:"IBM Plex Mono",monospace;
+  }
+
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--ink);
+    font-family:var(--body);
+    line-height:1.65;
+    -webkit-font-smoothing:antialiased;
+    text-rendering:optimizeLegibility;
+    overflow-x:hidden;
+  }
+  a{color:inherit;text-decoration:none;}
+  ::selection{background:var(--accent);color:#06080d;}
+
+  a:focus-visible, button:focus-visible{
+    outline:2px solid var(--accent);
+    outline-offset:3px;border-radius:2px;
+  }
+
+  /* animated molecular field */
+  #field{
+    position:fixed;inset:0;width:100%;height:100%;
+    z-index:0;display:block;pointer-events:none;
+  }
+  /* depth glow + vignette so text stays readable over the field */
+  .atmos{
+    position:fixed;inset:0;z-index:1;pointer-events:none;
+    background:
+      radial-gradient(1100px 700px at 78% -10%, rgba(92,141,255,0.14), transparent 60%),
+      radial-gradient(900px 600px at 12% 110%, rgba(92,141,255,0.08), transparent 60%),
+      radial-gradient(120% 120% at 50% 50%, transparent 55%, rgba(6,8,13,0.72) 100%);
+  }
+  .content{position:relative;z-index:2;}
+
+  .wrap{max-width:var(--maxw);margin:0 auto;padding:0 28px;}
+
+  /* ---------- nav ---------- */
+  .nav{
+    position:sticky;top:0;z-index:60;
+    background:rgba(10,12,18,0.6);
+    backdrop-filter:saturate(140%) blur(10px);
+    border-bottom:1px solid var(--line);
+  }
+  .nav-inner{display:flex;align-items:center;justify-content:space-between;height:62px;}
+  .brand{font-family:var(--mono);font-size:0.82rem;letter-spacing:0.04em;color:var(--ink);}
+  .brand b{color:var(--accent);font-weight:500;}
+  .nav-links{display:flex;gap:26px;align-items:center;}
+  .nav-links a{font-family:var(--mono);font-size:0.78rem;letter-spacing:0.03em;color:var(--muted);transition:color .2s ease;}
+  .nav-links a:hover{color:var(--accent);}
+  .nav-links .ext{color:var(--ink);}
+  @media(max-width:640px){ .nav-links{gap:16px;} .nav-links a:not(.ext){display:none;} }
+
+  /* ---------- eyebrow ---------- */
+  .eyebrow{
+    font-family:var(--mono);font-size:0.72rem;text-transform:uppercase;
+    letter-spacing:0.18em;color:var(--accent);
+    display:flex;align-items:center;gap:10px;margin:0 0 22px;
+  }
+  .eyebrow::before{content:"";width:22px;height:1px;background:var(--accent);display:inline-block;box-shadow:0 0 8px var(--glow);}
+
+  /* ---------- hero ---------- */
+  .hero{min-height:88vh;display:flex;align-items:center;padding:90px 0 60px;}
+  .hero-inner{max-width:760px;}
+  .tag{
+    font-family:var(--mono);font-size:0.74rem;letter-spacing:0.16em;text-transform:uppercase;
+    color:var(--muted);display:inline-flex;align-items:center;gap:10px;
+    border:1px solid var(--line-2);border-radius:100px;padding:7px 15px;margin:0 0 28px;
+  }
+  .tag .dot{width:7px;height:7px;border-radius:50%;background:var(--accent);box-shadow:0 0 10px var(--glow);}
+  .name{
+    font-family:var(--display);font-weight:600;
+    font-size:clamp(2.9rem,8vw,5.6rem);line-height:1.0;letter-spacing:-0.025em;margin:0 0 20px;
+  }
+  .name .em{
+    color:var(--accent);
+    text-shadow:0 0 36px var(--glow);
+  }
+  .role{font-family:var(--mono);font-size:clamp(0.85rem,2.2vw,1rem);color:var(--accent);letter-spacing:0.02em;margin:0 0 24px;}
+  .lede{font-size:1.12rem;color:#C4C9D6;max-width:54ch;margin:0 0 34px;}
+  .lede b{font-weight:600;color:var(--ink);}
+
+  .cta-row{display:flex;flex-wrap:wrap;gap:12px;}
+  .btn{
+    font-family:var(--mono);font-size:0.8rem;letter-spacing:0.02em;
+    padding:12px 19px;border:1px solid var(--line-2);border-radius:7px;
+    background:var(--panel);color:var(--ink);
+    transition:all .2s ease;display:inline-flex;align-items:center;gap:8px;
+  }
+  .btn:hover{border-color:var(--accent);color:var(--accent);transform:translateY(-1px);}
+  .btn-primary{background:var(--accent);color:#06080d;border-color:var(--accent);box-shadow:0 6px 30px -8px var(--glow);}
+  .btn-primary:hover{background:#7AA3FF;border-color:#7AA3FF;color:#06080d;}
+  .btn .ar{transition:transform .2s ease;}
+  .btn:hover .ar{transform:translate(2px,-2px);}
+
+  .scrollcue{
+    margin-top:64px;font-family:var(--mono);font-size:0.72rem;letter-spacing:0.14em;
+    text-transform:uppercase;color:var(--muted);display:inline-flex;align-items:center;gap:10px;
+  }
+  .scrollcue .ln{width:34px;height:1px;background:var(--line-2);position:relative;overflow:hidden;}
+  .scrollcue .ln::after{content:"";position:absolute;inset:0;width:14px;background:var(--accent);animation:slide 2.4s ease-in-out infinite;}
+  @keyframes slide{0%{transform:translateX(-16px);}50%{transform:translateX(34px);}100%{transform:translateX(-16px);}}
+
+  /* ---------- sections ---------- */
+  section{padding:66px 0;border-top:1px solid var(--line);}
+  .section-head{font-family:var(--display);font-weight:600;font-size:1.55rem;letter-spacing:-0.01em;margin:0 0 30px;}
+
+  .focus-list{display:grid;grid-template-columns:1fr 1fr;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--bg-2);}
+  @media(max-width:680px){ .focus-list{grid-template-columns:1fr;} }
+  .focus-item{padding:24px 26px;border-bottom:1px solid var(--line);border-right:1px solid var(--line);transition:background .2s ease;}
+  .focus-item:nth-child(2n){border-right:none;}
+  @media(max-width:680px){ .focus-item{border-right:none;} }
+  .focus-item:hover{background:var(--accent-soft);}
+  .focus-item .n{font-family:var(--mono);font-size:0.72rem;color:var(--accent);}
+  .focus-item p{margin:8px 0 0;font-size:0.98rem;color:#C4C9D6;}
+
+  .entry{display:grid;grid-template-columns:170px 1fr;gap:28px;padding:28px 0;border-top:1px solid var(--line);}
+  .entry:first-of-type{border-top:none;}
+  @media(max-width:680px){ .entry{grid-template-columns:1fr;gap:8px;} }
+  .entry .meta{font-family:var(--mono);font-size:0.76rem;color:var(--muted);padding-top:3px;letter-spacing:0.02em;}
+  .entry h3{font-family:var(--display);font-weight:600;font-size:1.1rem;margin:0 0 4px;}
+  .entry .sub{font-size:0.84rem;color:var(--accent);margin:0 0 12px;font-family:var(--mono);}
+  .entry ul{margin:0;padding-left:18px;}
+  .entry li{margin:6px 0;color:#B9BFCE;font-size:0.97rem;}
+  .entry li::marker{color:var(--accent);}
+  .entry .tools{margin-top:12px;font-family:var(--mono);font-size:0.74rem;color:var(--muted);}
+
+  .pub{padding:18px 0;border-top:1px solid var(--line);}
+  .pub:first-of-type{border-top:none;}
+  .pub .kind{font-family:var(--mono);font-size:0.7rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--accent);}
+  .pub p{margin:6px 0 0;font-size:0.98rem;color:#C4C9D6;}
+  .pub .venue{color:var(--muted);font-style:italic;}
+  .note{font-family:var(--mono);font-size:0.78rem;color:var(--muted);margin-top:18px;}
+
+  .skills{display:grid;grid-template-columns:repeat(2,1fr);gap:1px;background:var(--line);border:1px solid var(--line);border-radius:10px;overflow:hidden;}
+  @media(max-width:680px){ .skills{grid-template-columns:1fr;} }
+  .skill{background:var(--bg-2);padding:22px 24px;transition:background .2s ease;}
+  .skill:hover{background:#161A26;}
+  .skill h4{font-family:var(--mono);font-size:0.72rem;text-transform:uppercase;letter-spacing:0.12em;color:var(--accent);margin:0 0 10px;}
+  .skill p{margin:0;font-size:0.94rem;color:#C4C9D6;}
+
+  .edu{display:flex;justify-content:space-between;align-items:baseline;gap:20px;flex-wrap:wrap;}
+  .edu h3{font-family:var(--display);font-weight:600;font-size:1.1rem;margin:0;}
+  .edu .meta{font-family:var(--mono);font-size:0.78rem;color:var(--muted);}
+  .course{color:var(--muted);font-size:0.92rem;margin:12px 0 0;max-width:74ch;}
+
+  footer{border-top:1px solid var(--line);padding:58px 0 64px;}
+  .foot-grid{display:flex;justify-content:space-between;align-items:flex-end;gap:24px;flex-wrap:wrap;}
+  .foot-grid h2{font-family:var(--display);font-weight:600;font-size:1.7rem;margin:0 0 12px;}
+  .foot-links{display:flex;gap:20px;flex-wrap:wrap;}
+  .foot-links a{font-family:var(--mono);font-size:0.82rem;color:var(--muted);transition:color .2s;}
+  .foot-links a:hover{color:var(--accent);}
+  .colophon{font-family:var(--mono);font-size:0.72rem;color:var(--muted);margin-top:36px;}
+
+  .reveal{opacity:0;transform:translateY(14px);transition:opacity .7s ease,transform .7s ease;}
+  .reveal.in{opacity:1;transform:none;}
+  @media(prefers-reduced-motion:reduce){
+    .reveal{opacity:1;transform:none;transition:none;}
+    .scrollcue .ln::after{animation:none;}
+    html{scroll-behavior:auto;}
+  }
+</style>
+</head>
+<body>
+
+<!-- animated molecular field -->
+<canvas id="field"></canvas>
+<div class="atmos"></div>
+
+<div class="content">
+
+<!-- ================= NAV ================= -->
+<nav class="nav">
+  <div class="wrap nav-inner">
+    <div class="brand">PS&nbsp;Satchith&nbsp;<b>/ molecular dynamics</b></div>
+    <div class="nav-links">
+      <a href="#focus">focus</a>
+      <a href="#work">work</a>
+      <a href="#pubs">writing</a>
+      <a href="#skills">skills</a>
+      <!-- TODO: replace with your CV PDF filename once uploaded to the repo -->
+      <a class="ext" href="CV.pdf">CV ↗</a>
+    </div>
+  </div>
+</nav>
+
+<!-- ================= HERO ================= -->
+<header class="hero">
+  <div class="wrap">
+    <div class="hero-inner reveal">
+      <h1 class="name">PS&nbsp;<span class="em">Satchith</span></h1>
+      <p class="role">molecular dynamics</p>
+      <p class="lede">
+        Integrated MSc Physics student working across the full
+        first-principles-to-machine-learning pipeline — <b>DFT-based AIMD in CP2K</b>,
+        neural-network interatomic potentials, and the analysis of solvation
+        structure and ion transport in electrolyte systems.
+      </p>
+      <div class="cta-row">
+        <a class="btn btn-primary" href="mailto:ps.satchith@gmail.com">Email <span class="ar">↗</span></a>
+        <a class="btn" href="https://github.com/satchith" target="_blank" rel="noopener">GitHub <span class="ar">↗</span></a>
+        <a class="btn" href="https://linkedin.com/in/s4tchith" target="_blank" rel="noopener">LinkedIn <span class="ar">↗</span></a>
+        <!-- TODO: add Google Scholar / ORCID here once you have publications -->
+      </div>
+      <div class="scrollcue"><span class="ln"></span> scroll</div>
+    </div>
+  </div>
+</header>
+
+<!-- ================= FOCUS ================= -->
+<section id="focus">
+  <div class="wrap">
+    <p class="eyebrow reveal">research focus</p>
+    <h2 class="section-head reveal">What I work on</h2>
+    <div class="focus-list reveal">
+      <div class="focus-item"><span class="n">01</span><p>Machine-learning interatomic potentials (MLIPs) and deep learning for atomistic simulation.</p></div>
+      <div class="focus-item"><span class="n">02</span><p>Ab initio / first-principles molecular dynamics of liquids and electrolytes.</p></div>
+      <div class="focus-item"><span class="n">03</span><p>Computational condensed-matter physics and energy materials — ion transport, solvation.</p></div>
+      <div class="focus-item"><span class="n">04</span><p>Earlier: quantum information and quantum optics (photonic qubits, LOQC).</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= WORK ================= -->
+<section id="work">
+  <div class="wrap">
+    <p class="eyebrow reveal">experience &amp; projects</p>
+    <h2 class="section-head reveal">Research &amp; projects</h2>
+
+    <div class="entry reveal">
+      <div class="meta">2026</div>
+      <div>
+        <h3>Ab initio molecular dynamics of NaClO₄ in water</h3>
+        <p class="sub">CP2K · DFT-based AIMD · electrolyte simulation</p>
+        <ul>
+          <li>Ran AIMD simulations of aqueous sodium perchlorate to study Na⁺ solvation structure, water hydrogen bonding, and short-time dynamics.</li>
+          <li>Found weaker ion–solvent interactions than Li⁺ (higher mobility); quantified diffusion from trajectories and linked solvation environment to electrolyte performance for sodium-ion batteries.</li>
+        </ul>
+        <div class="tools">CP2K · RDF &amp; diffusion analysis (Python) · LaTeX</div>
+      </div>
+    </div>
+
+    <div class="entry reveal">
+      <div class="meta">Apr – Jul 2025</div>
+      <div>
+        <h3>Summer Research Fellow — IAS·INSA·NASI Joint Academies</h3>
+        <p class="sub">under Dr. Atanu Bhattacharya · photonic quantum computing</p>
+        <ul>
+          <li>Studied the classical-to-quantum optics transition; simulated the Deutsch algorithm using polarization/path encoding.</li>
+          <li>Designed an optical circuit for Gaussian 2-qubit state initialization using SPDC and LOQC components.</li>
+          <li>Awarded a competitive national research fellowship by the three Indian science academies.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="entry reveal">
+      <div class="meta">Jul – Sep 2025</div>
+      <div>
+        <h3>REYES 2025 Mentorship Programme — UC Berkeley</h3>
+        <p class="sub">pedagogical review · mentoring</p>
+        <ul>
+          <li>Authored a review, <em>Foundations of Photonic Quantum Computing</em>, submitted to UC Berkeley as a programme outcome.</li>
+          <li>Mentored two students through the foundations of photonic quantum computing.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="entry reveal">
+      <div class="meta">2025</div>
+      <div>
+        <h3>Working model of LIGO</h3>
+        <p class="sub">interferometry · signal processing</p>
+        <ul>
+          <li>Built a Michelson interferometer with Fabry–Pérot cavities; acquired phototransistor signals via Arduino and recovered “strain vs. time” using bandpass filtering and FFTs in Python.</li>
+          <li>Won the Physics Category Prize at SCIVIO 2025.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= PUBLICATIONS ================= -->
+<section id="pubs">
+  <div class="wrap">
+    <p class="eyebrow reveal">publications &amp; talks</p>
+    <h2 class="section-head reveal">Writing &amp; presentations</h2>
+    <div class="reveal">
+      <div class="pub">
+        <span class="kind">Poster</span>
+        <p>Ab Initio Molecular Dynamics Study of Sodium Perchlorate in Water.
+           <span class="venue">GITAM Chemistry Conference, February 2026.</span></p>
+      </div>
+      <!-- TODO: add journal papers as they are published -->
+      <p class="note">Journal manuscripts in preparation.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ================= SKILLS ================= -->
+<section id="skills">
+  <div class="wrap">
+    <p class="eyebrow reveal">toolkit</p>
+    <h2 class="section-head reveal">Technical skills</h2>
+    <div class="skills reveal">
+      <div class="skill"><h4>Simulation &amp; atomistic ML</h4><p>CP2K (DFT-based AIMD) · DeePMD-kit (MLIP training) · PyTorch</p></div>
+      <div class="skill"><h4>Programming</h4><p>Python (NumPy, SciPy, Matplotlib, Pandas) · Bash · Git / GitHub</p></div>
+      <div class="skill"><h4>HPC &amp; environment</h4><p>Linux · SLURM · GPU computing</p></div>
+      <div class="skill"><h4>Analysis &amp; other</h4><p>RDF / coordination / diffusion analysis · OriginLab · LaTeX · Qiskit (basic)</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= EDUCATION ================= -->
+<section id="education">
+  <div class="wrap">
+    <p class="eyebrow reveal">education</p>
+    <div class="reveal">
+      <div class="edu">
+        <h3>Integrated MSc Physics — Amrita Vishwa Vidyapeetham, Coimbatore</h3>
+        <div class="meta">2022 – 2027 · CGPA 8.11/10</div>
+      </div>
+      <p class="course">
+        Quantum Mechanics I &amp; II · Condensed Matter Physics · Atomic &amp; Molecular Spectroscopy ·
+        Mathematical Physics I &amp; II · Electrodynamics · Wave Optics · Nuclear &amp; Particle Physics ·
+        General &amp; Special Relativity · Physics of Compact Stars.
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- ================= FOOTER ================= -->
+<footer>
+  <div class="wrap">
+    <div class="foot-grid reveal">
+      <div>
+        <h2>Let’s talk.</h2>
+        <div class="foot-links">
+          <a href="mailto:ps.satchith@gmail.com">ps.satchith@gmail.com</a>
+          <a href="https://github.com/satchith" target="_blank" rel="noopener">github.com/satchith</a>
+          <a href="https://linkedin.com/in/s4tchith" target="_blank" rel="noopener">linkedin.com/in/s4tchith</a>
+        </div>
+      </div>
+      <div class="foot-links">
+        <a href="#focus">focus</a>
+        <a href="#work">work</a>
+        <a href="#pubs">writing</a>
+        <a href="CV.pdf">CV</a>
+      </div>
+    </div>
+    <p class="colophon">© <span id="yr"></span> PS Satchith · built and hosted on GitHub Pages.</p>
+  </div>
+</footer>
+
+</div><!-- /.content -->
+
+<script>
+  document.getElementById('yr').textContent = new Date().getFullYear();
+
+  // ---------- scroll reveal ----------
+  (function(){
+    var els = document.querySelectorAll('.reveal');
+    if(!('IntersectionObserver' in window)){ els.forEach(function(e){e.classList.add('in');}); return; }
+    var io = new IntersectionObserver(function(entries){
+      entries.forEach(function(en){ if(en.isIntersecting){ en.target.classList.add('in'); io.unobserve(en.target); } });
+    },{ threshold:0.12, rootMargin:"0px 0px -40px 0px" });
+    els.forEach(function(e){ io.observe(e); });
+  })();
+
+  // ---------- animated molecular field ----------
+  (function(){
+    var canvas = document.getElementById('field');
+    var ctx = canvas.getContext('2d');
+    var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    var W, H, dpr, atoms = [], LINK = 150, raf = null;
+    var pointer = { x:-9999, y:-9999, active:false };
+
+    function rand(a,b){ return a + Math.random()*(b-a); }
+
+    function build(){
+      var area = W * H;
+      var target = Math.min(90, Math.max(34, Math.round(area / 17000)));
+      atoms = [];
+      for(var i=0;i<target;i++){
+        atoms.push({
+          x: Math.random()*W,
+          y: Math.random()*H,
+          vx: rand(-0.22,0.22),
+          vy: rand(-0.22,0.22),
+          r: rand(1.6,3.4),
+          // a few brighter "heavier" atoms for variety
+          hot: Math.random() < 0.18
+        });
+      }
+    }
+
+    function resize(){
+      dpr = Math.min(window.devicePixelRatio || 1, 2);
+      W = window.innerWidth; H = window.innerHeight;
+      canvas.width = W * dpr; canvas.height = H * dpr;
+      canvas.style.width = W + 'px'; canvas.style.height = H + 'px';
+      ctx.setTransform(dpr,0,0,dpr,0,0);
+      build();
+      if(reduce){ draw(); } // single static frame
+    }
+
+    function draw(){
+      ctx.clearRect(0,0,W,H);
+
+      // bonds
+      for(var i=0;i<atoms.length;i++){
+        var a = atoms[i];
+        for(var j=i+1;j<atoms.length;j++){
+          var b = atoms[j];
+          var dx = a.x-b.x, dy = a.y-b.y;
+          var d = Math.sqrt(dx*dx+dy*dy);
+          if(d < LINK){
+            var al = (1 - d/LINK) * 0.5;
+            ctx.strokeStyle = 'rgba(92,141,255,' + al.toFixed(3) + ')';
+            ctx.lineWidth = 1;
+            ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y); ctx.stroke();
+          }
+        }
+        // bond to pointer
+        if(pointer.active){
+          var pdx = a.x-pointer.x, pdy = a.y-pointer.y, pd = Math.sqrt(pdx*pdx+pdy*pdy);
+          if(pd < LINK*1.5){
+            var pal = (1 - pd/(LINK*1.5)) * 0.6;
+            ctx.strokeStyle = 'rgba(122,163,255,' + pal.toFixed(3) + ')';
+            ctx.lineWidth = 1;
+            ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(pointer.x,pointer.y); ctx.stroke();
+          }
+        }
+      }
+
+      // atoms
+      for(var k=0;k<atoms.length;k++){
+        var p = atoms[k];
+        if(p.hot){
+          ctx.fillStyle = 'rgba(150,190,255,0.95)';
+          ctx.shadowColor = 'rgba(92,141,255,0.9)';
+          ctx.shadowBlur = 10;
+        } else {
+          ctx.fillStyle = 'rgba(92,141,255,0.75)';
+          ctx.shadowBlur = 0;
+        }
+        ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,Math.PI*2); ctx.fill();
+        ctx.shadowBlur = 0;
+      }
+    }
+
+    function step(){
+      for(var i=0;i<atoms.length;i++){
+        var a = atoms[i];
+        a.x += a.vx; a.y += a.vy;
+
+        // gentle drift away from the pointer
+        if(pointer.active){
+          var dx = a.x-pointer.x, dy = a.y-pointer.y, d2 = dx*dx+dy*dy;
+          if(d2 < 14000 && d2 > 0.01){
+            var f = (14000 - d2)/14000 * 0.5;
+            var d = Math.sqrt(d2);
+            a.vx += (dx/d)*f*0.06; a.vy += (dy/d)*f*0.06;
+          }
+        }
+        // damping + speed clamp
+        a.vx *= 0.995; a.vy *= 0.995;
+        var sp = Math.sqrt(a.vx*a.vx+a.vy*a.vy), max=0.55;
+        if(sp>max){ a.vx=(a.vx/sp)*max; a.vy=(a.vy/sp)*max; }
+
+        // wrap around edges
+        if(a.x < -20) a.x = W+20; else if(a.x > W+20) a.x = -20;
+        if(a.y < -20) a.y = H+20; else if(a.y > H+20) a.y = -20;
+      }
+      draw();
+      raf = requestAnimationFrame(step);
+    }
+
+    // pointer (mouse only; ignore touch so scrolling stays smooth)
+    window.addEventListener('mousemove', function(e){ pointer.x=e.clientX; pointer.y=e.clientY; pointer.active=true; });
+    window.addEventListener('mouseleave', function(){ pointer.active=false; pointer.x=-9999; pointer.y=-9999; });
+
+    var rt;
+    window.addEventListener('resize', function(){ clearTimeout(rt); rt=setTimeout(resize,150); });
+
+    resize();
+    if(!reduce){ step(); }
+  })();
+</script>
+</body>
+</html>
